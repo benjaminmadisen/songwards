@@ -2,6 +2,7 @@ from flask import Flask, render_template, session, redirect, url_for, request
 from time import time
 import os
 import requests
+import numpy as np
 
 app = Flask(__name__)
 app.secret_key = os.urandom(50)
@@ -27,7 +28,10 @@ def get_access_token():
 
 def get_song_object_from_track_item(item):
     return {'uri': item['id'],
-            'text': item['name']+", "+item['artists'][0]['name']}
+            'name': item['name'],
+            'artist': item['artists'][0]['name'],
+            'image_url': [img['url'] for img in item['album']['images'] if img['height'] < 100][0],
+            'score': -1}
 
 def make_spotify_request(endpoint, payload):
     access_token = get_access_token()
@@ -62,6 +66,13 @@ def search_spotify(search_text):
             return [get_song_object_from_track_item(item) for item in r['tracks']['items']]
     return []
 
+def score_uris(search_text, uris):
+    rand_vals = np.random.random(len(uris))
+    out = {}
+    for uri_ix in range(len(uris)):
+        out[uris[uri_ix]] = rand_vals[uri_ix]
+    return out
+
 @app.route('/')
 def root():
     uris = ""
@@ -88,6 +99,15 @@ def search_songs():
         tracks = search_spotify(search_text)
         return {'songs':tracks}
     return {'songs':[]}
+
+@app.route('/score_songs')
+def score_songs():
+    search_text = request.args.get('text', None)
+    uris = request.args.get('uris', None).split(",")
+    if search_text is not None:
+        if len(uris) > 0:
+            return {'scores': score_uris(search_text, uris)}
+    return {'scores':{}}
 
 @app.route('/add_uri', methods=['POST'])
 def add_uri():

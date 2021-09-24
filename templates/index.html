@@ -7,21 +7,28 @@
 
   <h1>Songwards</h1>
   <div id="app">
-    <input id='search' type=text v-model="searchText">
-    <button v-on:click='searchSongs'>Search</button>
-    <div>
-      <search-song-item
-        v-for="song in searchedSongs"
-        v-bind:key="song.uri"
-        v-bind:song="song"
-      ></search-song-item>
+    <div id="song-list">
+      <input id='song-search' type=text v-model="searchText">
+      <button v-on:click='searchSongs'>Search</button>
+      <div>
+        <search-song-item
+          v-for="song in searchedSongs"
+          v-bind:key="song.uri"
+          v-bind:song="song"
+        ></search-song-item>
+      </div>
+      <div>
+        <display-song-item
+          v-for="song in selectedSongs"
+          v-bind:key="song.uri"
+          v-bind:song="song"
+        ></display-song-item>
+      </div>
     </div>
-    <div>
-      <display-song-item
-        v-for="song in selectedSongs"
-        v-bind:key="song.uri"
-        v-bind:song="song"
-      ></display-song-item>
+    <div id="word-box">
+      <input id='word-search' type=text v-model="wordText">
+      <button v-on:click='searchWord'>Search</button>
+      <div id='current-word'>[[ currentWord ]]</div>
     </div>
   </div>
 
