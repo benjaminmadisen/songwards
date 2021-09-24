@@ -1,47 +1,82 @@
-Vue.component('song-item', {
+
+
+Vue.component('display-song-item', {
     props: ['song'],
-    template: "<li>no {{ song.text }}</li><button v-on:click='removeUri({{ song.uri }})'>Remove</button>"
+    template: `
+      <div class="display-song-item">
+        {{ song.text }}
+        <button v-on:click="app.removeSelectedSong(song)">
+          Remove
+        </button>
+      </div>
+    `
+  })
+  Vue.component('search-song-item', {
+    props: ['song'],
+    template: `
+      <div class="search-song-item">
+        {{ song.text }}
+        <button v-on:click="app.addSearchedSong(song)">
+          Add
+        </button>
+      </div>
+    `
   })
 var app = new Vue({
     el: '#app',
     delimiters: ["[[", "]]"],
     data: {
-      uri_in: "",
-      selectedSongs: [
-          
-      ]
-    },
-    created: function () {
-        var element = document.getElementById('uris');
-        var text = element.innerText;
-        var uris = text.split(",");
-        uris.forEach(this.addNewSong);
+      searchText: "",
+      selectedSongs: [],
+      searchedSongs: []
     },
     methods: {
-        addUriIn: function () {
-            if (this.uri_in != ""){
-            this.selectedSongs.push({
-                uri: this.uri_in,
-                text: this.uri_in
-            });
-            var formData = new FormData();
-            formData.append("uri", this.uri_in);
-            var req = new XMLHttpRequest();
-            req.open("POST", "/add_uri");
-            req.send(formData);
-            this.uri_in = "";
-        }
+        searchSongs: function () {
+          let xhr = new XMLHttpRequest();
+          xhr.open('GET', '/search_songs?text='+this.searchText);
+          xhr.responseType = 'json';
+          xhr.send();
+          this.searchText = "";
+
+          var app = this;
+          xhr.onload = function() {
+            let responseObj = xhr.response;
+            app.searchedSongs = responseObj.songs;
+          };
         },
-        removeUri: function (uri) {
-            this.selectedSongs = this.selectedSongs.filter(function(s) { return s.uri !== uri })
-        },
-        addNewSong: function (value, index, array) {
-          if (value != ""){
+        addSearchedSong: function (song) {
           this.selectedSongs.push({
-            uri: value,
-            text: value
+            uri: song.uri,
+            text: song.text
           });
-          }
+          var formData = new FormData();
+          formData.append("uri", song.uri);
+          var req = new XMLHttpRequest();
+          req.open("POST", "/add_uri");
+          req.send(formData);
+          this.searchedSongs = this.searchedSongs.filter(function(s) { return s.uri !== song.uri })
+        },
+        removeSelectedSong: function (song) {
+          var formData = new FormData();
+          formData.append("uri", song.uri);
+          var req = new XMLHttpRequest();
+          req.open("POST", "/remove_uri");
+          req.send(formData);
+          this.selectedSongs = this.selectedSongs.filter(function(s) { return s.uri !== song.uri })
         }
+      },
+      created: function () {
+        let xhr = new XMLHttpRequest();
+        xhr.open('GET', '/get_songs');
+        xhr.responseType = 'json';
+        xhr.send();
+
+        let selectedSongs = this.selectedSongs;
+        xhr.onload = function() {
+          let responseObj = xhr.response;
+          for (const song of responseObj.songs){
+            selectedSongs.push(song);
+          }
+        };
       }
   })

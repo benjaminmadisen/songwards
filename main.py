@@ -1,19 +1,93 @@
 from flask import Flask, render_template, session, redirect, url_for, request
 from time import time
 import os
+import requests
 
 app = Flask(__name__)
 app.secret_key = os.urandom(50)
+
+global_access_token = None
+
+def get_spotify_keys():
+    return os.getenv('SPOTIFY_CLIENT_ID'), os.getenv('SPOTIFY_CLIENT_SECRET')
+
+def refresh_access_token():
+    spotify_keys = get_spotify_keys()
+    payload = {'grant_type':'client_credentials',
+               'client_id':spotify_keys[0],
+               'client_secret':spotify_keys[1]}
+    r = requests.post("https://accounts.spotify.com/api/token/", data=payload).json()
+    return r['access_token']
+
+def get_access_token():
+    global global_access_token
+    if global_access_token is None:
+        access_token = refresh_access_token()
+    return access_token
+
+def get_song_object_from_track_item(item):
+    return {'uri': item['id'],
+            'text': item['name']+", "+item['artists'][0]['name']}
+
+def make_spotify_request(endpoint, payload):
+    access_token = get_access_token()
+    headers = {'Authorization': 'Bearer '+access_token}
+    r = requests.get("https://api.spotify.com/v1/%s?%s" % (endpoint, "&".join(["%s=%s" % (p_key, payload[p_key]) for p_key in list(payload.keys())])), headers=headers)
+    try:
+        r = r.json()
+    except:
+        return {}
+    if 'error' in r:
+        if 'message' in r['error']:
+            if r['error']['message'] == 'The access token expired':
+                global global_access_token
+                global_access_token = None
+                return make_spotify_request(endpoint, payload)
+    return r
+
+def lookup_spotify(uris):
+    payload = {'ids':",".join(uris)}
+    r = make_spotify_request('tracks', payload)
+    if 'tracks' in r:
+        return [get_song_object_from_track_item(item) for item in r['tracks']]
+    return []
+
+def search_spotify(search_text):
+    payload = {'q':search_text,
+               'type':'track',
+               'limit':'3'}
+    r = make_spotify_request('search', payload)
+    if 'tracks' in r:
+        if 'items' in r['tracks']:
+            return [get_song_object_from_track_item(item) for item in r['tracks']['items']]
+    return []
 
 @app.route('/')
 def root():
     uris = ""
     if 'songwards_recent' in session:
-        if time()-int(session['songwards_recent']) < 3600:
+        if time()-int(session['songwards_recent']) > 3600:
             if 'songwards_uris' in session:
-                uris = session['songwards_uris']
+                session.pop('songwards_uris')
     session['songwards_recent'] = time()
     return render_template('index.html', uris=uris)
+
+@app.route('/get_songs')
+def session_songs():
+    songs = []
+    if 'songwards_uris' in session:
+        if len(session['songwards_uris']) > 0:
+            uris = session['songwards_uris'].split(",")[:-1]
+            songs = lookup_spotify(uris)
+    return {'songs':songs}
+
+@app.route('/search_songs')
+def search_songs():
+    search_text = request.args.get('text', None)
+    if search_text is not None:
+        tracks = search_spotify(search_text)
+        return {'songs':tracks}
+    return {'songs':[]}
 
 @app.route('/add_uri', methods=['POST'])
 def add_uri():
@@ -22,7 +96,6 @@ def add_uri():
     elif request.form['uri'] not in session['songwards_uris']:
         session['songwards_uris'] += request.form['uri']+","
     return redirect(url_for('root'))
-    
 
 @app.route('/remove_uri', methods=['POST'])
 def remove_uri():

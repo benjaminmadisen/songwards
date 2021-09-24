@@ -6,25 +6,25 @@
 <body>
 
   <h1>Songwards</h1>
-
-  <p id="uris"> {{ uris }} </p>
-
   <div id="app">
-    <p><input id='uri_in' type=text v-model="uri_in">
-    <button v-on:click='addUriIn'>Add</button>
-    <ol>
-      <song-item
-        v-for="item in selectedSongs"
-        v-bind:song="item"
-        v-bind:key="item.uri"
-      ></song-item>
-    </ol>
+    <input id='search' type=text v-model="searchText">
+    <button v-on:click='searchSongs'>Search</button>
+    <div>
+      <search-song-item
+        v-for="song in searchedSongs"
+        v-bind:key="song.uri"
+        v-bind:song="song"
+      ></search-song-item>
+    </div>
+    <div>
+      <display-song-item
+        v-for="song in selectedSongs"
+        v-bind:key="song.uri"
+        v-bind:song="song"
+      ></display-song-item>
+    </div>
   </div>
 
-  <form action='/remove_uri' method="post">
-    <p><input type=text name=uri>
-    <p><input type=submit value=Remove>
-  </form>
 
 </body>
 
