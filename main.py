@@ -1,12 +1,12 @@
-from flask import Flask, render_template, session, redirect, url_for, request
-from numpy.core.numeric import full
+from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory
 import tflite_runtime.interpreter as tflite
-from google.cloud import secretmanager
+from google.cloud import secretmanager, storage
 from time import time
 import os
 import requests
 import numpy as np
 import yaml
+import pickle
 
 client = secretmanager.SecretManagerServiceClient()
 
@@ -22,20 +22,24 @@ with open(".songwards_config", 'r') as config_file:
 audio_features_list = list(config_vars['audio_features'].keys())
 audio_features_mins = np.array([config_vars['audio_features'][af]['min'] for af in audio_features_list])
 audio_features_maxs = np.array([config_vars['audio_features'][af]['max'] for af in audio_features_list])
+storage_client = storage.Client()
+bucket = storage_client.bucket(config_vars['bucket_path'])
 
 def get_model():
     global global_interpreter
     if global_interpreter is None:
-        global_interpreter = tflite.Interpreter(model_path="modeling/model.tflite")
+        blob = bucket.blob(config_vars['model_path'])
+        model_content = blob.download_as_string()
+        global_interpreter = tflite.Interpreter(model_content=model_content)
         global_interpreter.allocate_tensors()
     return global_interpreter
 
 def get_wordvecs():
     global global_wordvecs
     if global_wordvecs is None:
-        global_wordvecs = {}
-        for s in config_vars['test_strings']:
-            global_wordvecs[s] = np.random.random((10,))
+        blob = bucket.blob(config_vars['wordvecs_path'])
+        global_wordvecs = pickle.loads(blob.download_as_bytes())
+        
     return global_wordvecs
 
 def get_gcloud_secret(secret_id):

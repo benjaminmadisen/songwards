@@ -1,7 +1,3 @@
-test_strings:
-    - test
-    - fake
-    - country
 audio_features:
     danceability:
         min: 0
@@ -36,3 +32,6 @@ audio_features:
     tempo:
         min: 0
         max: 200
+bucket_path: songwards.appspot.com
+model_path: tflite_model
+wordvecs_path: wordvecs
