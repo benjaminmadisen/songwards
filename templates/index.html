@@ -1,0 +1,24 @@
+<html>
+<head>
+  <title>Songbirds</title>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <h1>Songbirds</h1>
+
+  <p>{{ uris }}</p>
+
+  <form action='/add_uri' method="post">
+    <p><input type=text name=uri>
+    <p><input type=submit value=Add>
+  </form>
+
+  <form action='/remove_uri' method="post">
+    <p><input type=text name=uri>
+    <p><input type=submit value=Remove>
+  </form>
+
+</body>
+</html>
