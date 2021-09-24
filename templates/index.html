@@ -1,19 +1,25 @@
 <html>
 <head>
   <title>Songbirds</title>
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
   <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
   <h1>Songbirds</h1>
 
-  <p>{{ uris }}</p>
+  <p id="uris"> {{ uris }} </p>
 
-  <form action='/add_uri' method="post">
-    <p><input type=text name=uri>
-    <p><input type=submit value=Add>
-  </form>
+  <div id="app">
+    <p><input id='uri_in' type=text v-model="uri_in">
+    <button v-on:click='addUriIn'>Add</button>
+    <ol>
+      <song-item
+        v-for="item in selectedSongs"
+        v-bind:song="item"
+        v-bind:key="item.uri"
+      ></song-item>
+    </ol>
+  </div>
 
   <form action='/remove_uri' method="post">
     <p><input type=text name=uri>
@@ -21,4 +27,7 @@
   </form>
 
 </body>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 </html>
