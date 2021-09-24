@@ -8,27 +8,27 @@ app.secret_key = os.urandom(50)
 @app.route('/')
 def root():
     uris = ""
-    if 'songbird_recent' in session:
-        if time()-int(session['songbird_recent']) < 3600:
-            if 'songbird_uris' in session:
-                uris = session['songbird_uris']
-    session['songbird_recent'] = time()
+    if 'songwards_recent' in session:
+        if time()-int(session['songwards_recent']) < 3600:
+            if 'songwards_uris' in session:
+                uris = session['songwards_uris']
+    session['songwards_recent'] = time()
     return render_template('index.html', uris=uris)
 
 @app.route('/add_uri', methods=['POST'])
 def add_uri():
-    if 'songbird_uris' not in session:
-        session['songbird_uris'] = request.form['uri']+","
-    elif request.form['uri'] not in session['songbird_uris']:
-        session['songbird_uris'] += request.form['uri']+","
+    if 'songwards_uris' not in session:
+        session['songwards_uris'] = request.form['uri']+","
+    elif request.form['uri'] not in session['songwards_uris']:
+        session['songwards_uris'] += request.form['uri']+","
     return redirect(url_for('root'))
     
 
 @app.route('/remove_uri', methods=['POST'])
 def remove_uri():
-    if 'songbird_uris' in session:
-        if request.form['uri'] in session['songbird_uris']:
-            session['songbird_uris'] = session['songbird_uris'].replace(request.form['uri']+",","")
+    if 'songwards_uris' in session:
+        if request.form['uri'] in session['songwards_uris']:
+            session['songwards_uris'] = session['songwards_uris'].replace(request.form['uri']+",","")
     return redirect(url_for('root'))
 
 if __name__ == '__main__':
