@@ -1,2 +1,5 @@
 .venv
 __pycache__
+.gcloudignore
+app.yaml
+.local

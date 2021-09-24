@@ -1,5 +1,3 @@
-
-
 Vue.component('display-song-item', {
     props: ['song'],
     template: `

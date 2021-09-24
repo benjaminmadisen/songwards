@@ -1,16 +1,24 @@
 from flask import Flask, render_template, session, redirect, url_for, request
+from google.cloud import secretmanager
 from time import time
 import os
 import requests
 import numpy as np
+
+client = secretmanager.SecretManagerServiceClient()
 
 app = Flask(__name__)
 app.secret_key = os.urandom(50)
 
 global_access_token = None
 
+def get_gcloud_secret(secret_id):
+    name = "projects/songwards/secrets/%s/versions/latest" % secret_id
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode("UTF-8")
+
 def get_spotify_keys():
-    return os.getenv('SPOTIFY_CLIENT_ID'), os.getenv('SPOTIFY_CLIENT_SECRET')
+    return get_gcloud_secret('SPOTIFY_CLIENT_ID'), get_gcloud_secret('SPOTIFY_CLIENT_SECRET')
 
 def refresh_access_token():
     spotify_keys = get_spotify_keys()
