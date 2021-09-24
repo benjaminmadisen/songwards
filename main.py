@@ -1,9 +1,12 @@
 from flask import Flask, render_template, session, redirect, url_for, request
+from numpy.core.numeric import full
+import tflite_runtime.interpreter as tflite
 from google.cloud import secretmanager
 from time import time
 import os
 import requests
 import numpy as np
+import yaml
 
 client = secretmanager.SecretManagerServiceClient()
 
@@ -11,6 +14,29 @@ app = Flask(__name__)
 app.secret_key = os.urandom(50)
 
 global_access_token = None
+global_interpreter = None
+global_wordvecs = None
+global_cache = {}
+with open(".songwards_config", 'r') as config_file:
+    config_vars = yaml.load(config_file, Loader=yaml.CLoader)
+audio_features_list = list(config_vars['audio_features'].keys())
+audio_features_mins = np.array([config_vars['audio_features'][af]['min'] for af in audio_features_list])
+audio_features_maxs = np.array([config_vars['audio_features'][af]['max'] for af in audio_features_list])
+
+def get_model():
+    global global_interpreter
+    if global_interpreter is None:
+        global_interpreter = tflite.Interpreter(model_path="modeling/model.tflite")
+        global_interpreter.allocate_tensors()
+    return global_interpreter
+
+def get_wordvecs():
+    global global_wordvecs
+    if global_wordvecs is None:
+        global_wordvecs = {}
+        for s in config_vars['test_strings']:
+            global_wordvecs[s] = np.random.random((10,))
+    return global_wordvecs
 
 def get_gcloud_secret(secret_id):
     name = "projects/songwards/secrets/%s/versions/latest" % secret_id
@@ -74,11 +100,56 @@ def search_spotify(search_text):
             return [get_song_object_from_track_item(item) for item in r['tracks']['items']]
     return []
 
+def get_track_input_from_spotify(uri):
+    global global_cache
+    audio_features = make_spotify_request('audio-features',{'ids':uri})['audio_features']
+    #track_info = make_spotify_request('tracks',{'ids':uri})['tracks']
+
+    af_vec = np.array([[track[keyname] for keyname in audio_features_list] for track in audio_features])
+    af_vec = (af_vec-audio_features_mins)/(audio_features_maxs-audio_features_mins)
+    global_cache[uri] = af_vec
+    return af_vec
+
+def get_track_input(uri):
+    global global_cache
+    if uri in global_cache:
+        return global_cache[uri]
+    else:
+        return get_track_input_from_spotify(uri)
+
+def get_text_input(search_text):
+    wv = get_wordvecs()
+    if search_text in wv:
+        return wv[search_text]
+    else:
+        return None
+
 def score_uris(search_text, uris):
-    rand_vals = np.random.random(len(uris))
+    text_inp = get_text_input(search_text)
+    if text_inp is None:
+        return None
+    track_inp = []
+    for uri in uris:
+        uri_track_inp = get_track_input(uri)
+        if uri_track_inp is None:
+            return None
+        track_inp.append(uri_track_inp)
+    track_inp = np.concatenate(track_inp)
+    full_inp = np.zeros((track_inp.shape[0], track_inp.shape[1]+text_inp.shape[0]))
+    full_inp[:,:text_inp.shape[0]] = text_inp
+    full_inp[:,text_inp.shape[0]:] = track_inp
+    full_inp = full_inp.astype(np.float32)
+    model = get_model()
+    if model is None:
+        return None
+    input_details = model.get_input_details()
+    output_details = model.get_output_details()
+    model.set_tensor(input_details[0]['index'], full_inp)
+    model.invoke()
+    output_data = model.get_tensor(output_details[0]['index'])
     out = {}
     for uri_ix in range(len(uris)):
-        out[uris[uri_ix]] = rand_vals[uri_ix]
+        out[uris[uri_ix]] = float(output_data[uri_ix][0])
     return out
 
 @app.route('/')
