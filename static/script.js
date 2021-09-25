@@ -61,7 +61,14 @@ var app = new Vue({
             app.wordVector = responseObj.vector;
             for (song_id in app.selectedSongs){
               let song = app.selectedSongs[song_id];
-              inpvec = tf.tensor([app.wordVector.concat(song.vector[0])]);
+              inp_array = app.wordVector.concat(song.vector[0]);
+              if (song.name.toLowerCase().includes(app.currentWord.toLowerCase())){
+                inp_array[inp_array.length-2] = 1;
+              }
+              if (song.artist.toLowerCase().includes(app.currentWord.toLowerCase())){
+                inp_array[inp_array.length-1] = 1;
+              }
+              inpvec = tf.tensor([]);
               app.model.predict(inpvec).array().then(array => song.score = array[0][0]);
             }
           };
