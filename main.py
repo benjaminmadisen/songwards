@@ -71,7 +71,8 @@ def get_song_object_from_track_item(item):
             'artist': item['artists'][0]['name'],
             'image_url': [img['url'] for img in item['album']['images'] if img['height'] < 100][0],
             'vector': get_track_input(item['id']).astype(float).tolist(),
-            'score': -1}
+            'score': -1,
+            'score_color': 'none'}
 
 def make_spotify_request(endpoint, payload):
     access_token = get_access_token()

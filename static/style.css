@@ -17,7 +17,7 @@ img{
   #app{
     display: flex;
     max-width: 1600px;
-    min-width: 800px;
+    min-width: 400px;
     width: 100%;
     flex-direction: column;
     align-items: center;
@@ -50,13 +50,15 @@ img{
     margin-bottom: 10vh;
   }
   #word-search {
+    max-width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 5vh;
   }
   #word-search-box {
-    margin-right: 10%;
+    margin-left: 5px;
+    max-width: 75%;
   }
 
   #song-list {
@@ -91,7 +93,7 @@ img{
     height: 4vh;
     padding-top: .5vh;
     padding-bottom: .5vh;
-    min-width: 500px;
+    min-width: 300px;
     max-width: 800px;
     width: 100%;
     display: flex;
@@ -102,7 +104,7 @@ img{
     height: 4vh;
     padding-top: .5vh;
     padding-bottom: .5vh;
-    min-width: 500px;
+    min-width: 300px;
     max-width: 800px;
     width: 100%;
     display: flex;
@@ -116,6 +118,9 @@ img{
   .song-info img{
     padding-right: 5px;
     padding-left: 5px;
+  }
+  .song-score {
+    padding-left: 10px;
   }
   button {
     border: none;

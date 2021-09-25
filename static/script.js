@@ -9,7 +9,7 @@ Vue.component('display-song-item', {
           </button>
           <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}
         </div>
-        <div class="song-score">
+        <div v-show="song.score_color != 'none'" v-bind:style="{ color: song.score_color }" class="song-score">
           {{song.score}}
         </div>
       </div>
@@ -76,7 +76,12 @@ var app = new Vue({
                 inp_array[inp_array.length-1] = 1;
               }
               inpvec = tf.tensor([inp_array]);
-              app.model.predict(inpvec).array().then(array => song.score = Math.round(100*array[0][0]));
+              app.model.predict(inpvec).array().then(array => {
+                song.score = Math.round(100*array[0][0]);
+                redscore = Math.round(228-2*song.score)
+                greenscore = Math.round(28+2*song.score)
+                song.score_color = "rgb("+redscore+","+greenscore+",128)";
+              });
             }
           };
         },
@@ -95,7 +100,8 @@ var app = new Vue({
             artist: song.artist,
             image_url: song.image_url,
             vector: song.vector,
-            score: -1
+            score: -1,
+            score_color: "none"
           });
           var formData = new FormData();
           formData.append("uri", song.uri);
