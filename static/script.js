@@ -77,7 +77,7 @@ var app = new Vue({
               }
               inpvec = tf.tensor([inp_array]);
               app.model.predict(inpvec).array().then(array => {
-                song.score = Math.round(100*array[0][0]);
+                song.score = Math.round(100*array[0][1]);
                 redscore = Math.round(228-2*song.score)
                 greenscore = Math.round(28+2*song.score)
                 song.score_color = "rgb("+redscore+","+greenscore+",128)";

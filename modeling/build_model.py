@@ -1,34 +1,16 @@
-import tensorflow as tf
-import tensorflowjs as tfjs
+
+from gensim.models import KeyedVectors
 import numpy as np
+import re
 import pickle
 import os
 import yaml
 from google.cloud import storage
 
-model = tf.keras.Sequential(
-    [
-        tf.keras.layers.Input(shape=(23,)),
-        tf.keras.layers.Dense(32, activation="relu", name="layer1"),
-        tf.keras.layers.Dense(32, activation="relu", name="layer2"),
-        tf.keras.layers.Dense(2, activation="softmax", name="layer3"),
-    ]
-)
-
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-
-x = np.random.random((32,23))
-y = np.random.randint(2, size=32)
-ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(8)
-
-model.fit(ds, epochs=5)
-model.fit(ds, epochs=5)
-tfjs.converters.save_keras_model(model, "modeling/test_tfjs/")
-
 storage_client = storage.Client()
 bucket = storage_client.bucket('songwards.appspot.com')
 
-output_path = "modeling/test_tfjs/"
+output_path = "../gparty3/data/private/models/test_tfjs/"
 if not os.path.isdir(output_path):
     os.makedirs(output_path)
 with open(".songwards_config", 'r') as config_file:
@@ -46,8 +28,10 @@ os.rmdir(output_path)
 
 
 
+word_vecs = KeyedVectors.load("../gparty3/data/private/models/word2vec.wordvectors", mmap='r')
+useful_words = [itk for itk in wordvecs.index_to_key if not re.search(r'\d', itk)]
 wordvecs = {}
-for s in ['country','test','fake']:
-    wordvecs[s] = np.random.random((10,))
+for word in useful_words:
+    wordvecs[word] = word_vecs[word]
 blob = bucket.blob('wordvecs')
 blob.upload_from_string(pickle.dumps(wordvecs))
