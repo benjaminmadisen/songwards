@@ -8,7 +8,7 @@ from google.cloud import storage
 
 model = tf.keras.Sequential(
     [
-        tf.keras.layers.Input(shape=(21,)),
+        tf.keras.layers.Input(shape=(23,)),
         tf.keras.layers.Dense(32, activation="relu", name="layer1"),
         tf.keras.layers.Dense(32, activation="relu", name="layer2"),
         tf.keras.layers.Dense(2, activation="softmax", name="layer3"),
@@ -17,7 +17,7 @@ model = tf.keras.Sequential(
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
 
-x = np.random.random((32,21))
+x = np.random.random((32,23))
 y = np.random.randint(2, size=32)
 ds = tf.data.Dataset.from_tensor_slices((x, y)).batch(8)
 
