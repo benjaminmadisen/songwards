@@ -3,10 +3,15 @@ Vue.component('display-song-item', {
     props: ['song'],
     template: `
       <div class="display-song-item">
-        <button v-on:click="app.removeSelectedSong(song)">
-          Remove
+        <button class="add_remove" v-on:click="app.removeSelectedSong(song)">
+          -
         </button>
-        <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}: {{song.score}}
+        <div class="song-info">
+          <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}
+        </div>
+        <div class="song-score">
+          {{song.score}}
+        </div>
       </div>
     `
   })
@@ -14,9 +19,11 @@ Vue.component('display-song-item', {
     props: ['song'],
     template: `
       <div class="search-song-item">
-      <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}
-        <button v-on:click="app.addSearchedSong(song)">
-          Add
+        <div class="song-info">
+          <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}
+        </div>
+        <button class="add_remove" v-on:click="app.addSearchedSong(song)">
+          +
         </button>
       </div>
     `
