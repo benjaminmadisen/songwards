@@ -1,5 +1,4 @@
-from flask import Flask, render_template, session, redirect, url_for, request, send_from_directory
-import tflite_runtime.interpreter as tflite
+from flask import Flask, render_template, session, redirect, url_for, request
 from google.cloud import secretmanager, storage
 from time import time
 import os
