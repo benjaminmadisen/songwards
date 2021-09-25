@@ -26,7 +26,7 @@
       <div id="word-box">
         <div id='current-word'>[[ currentWord ]]</div>
         <div id='word-search'>
-          <input id='word-search-box' v-on:keyup.enter='searchWord' type=text v-model="wordText">
+          <input id='word-search-box' v-on:keyup.enter='searchWord' placeholder="score phrase" type=text v-model="wordText">
           <button id='word-search-button' v-on:click='searchWord'><span class="material-icons md-36">&#xef3e;</span></button>
         </div>
       </div>
@@ -46,7 +46,7 @@
             v-bind:song="song"
           ></search-song-item>
           <div id="song-search">
-            <input id='song-search-box' v-on:keyup.enter='searchSongs' type=text v-model="searchText">
+            <input id='song-search-box' v-on:keyup.enter='searchSongs' placeholder="search songs" type=text v-model="searchText">
             <button v-on:click='searchSongs'><span class="material-icons md-36">&#xe8b6;</span></button>
           </div>
         </div>
