@@ -20,8 +20,8 @@ global_cache = {}
 with open(".songwards_config", 'r') as config_file:
     config_vars = yaml.load(config_file, Loader=yaml.CLoader)
 audio_features_list = list(config_vars['audio_features'].keys())
-audio_features_mins = np.array([config_vars['audio_features'][af]['min'] for af in audio_features_list])
-audio_features_maxs = np.array([config_vars['audio_features'][af]['max'] for af in audio_features_list])
+audio_features_mins = np.array([config_vars['audio_features'][af]['min'] for af in audio_features_list]+[0,0])
+audio_features_maxs = np.array([config_vars['audio_features'][af]['max'] for af in audio_features_list]+[1,1])
 valid_tfjs_paths = config_vars['valid_tfjs_paths']
 storage_client = storage.Client()
 bucket = storage_client.bucket(config_vars['bucket_path'])
@@ -111,12 +111,12 @@ def get_track_input_from_spotify(uri):
     audio_features = make_spotify_request('audio-features',{'ids':uri})['audio_features']
     #track_info = make_spotify_request('tracks',{'ids':uri})['tracks']
 
-    af_vec = np.array([[track[keyname] for keyname in audio_features_list] for track in audio_features]+[0,0])
+    af_vec = np.array([[track[keyname] for keyname in audio_features_list] +[0,0] for track in audio_features])
     af_vec = (af_vec-audio_features_mins)/(audio_features_maxs-audio_features_mins)
     global_cache[uri] = af_vec
     return af_vec
 
-def get_track_input(uri, track_name, artist_name):
+def get_track_input(uri):
     global global_cache
     if uri in global_cache:
         return global_cache[uri]

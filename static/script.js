@@ -68,7 +68,7 @@ var app = new Vue({
               if (song.artist.toLowerCase().includes(app.currentWord.toLowerCase())){
                 inp_array[inp_array.length-1] = 1;
               }
-              inpvec = tf.tensor([]);
+              inpvec = tf.tensor([inp_array]);
               app.model.predict(inpvec).array().then(array => song.score = array[0][0]);
             }
           };
