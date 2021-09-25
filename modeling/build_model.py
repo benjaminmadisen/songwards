@@ -29,7 +29,7 @@ os.rmdir(output_path)
 
 
 word_vecs = KeyedVectors.load("../gparty3/data/private/models/word2vec.wordvectors", mmap='r')
-useful_words = [itk for itk in wordvecs.index_to_key if not re.search(r'\d', itk)]
+useful_words = [itk for itk in word_vecs.index_to_key if not re.search(r'\d', itk)]
 wordvecs = {}
 for word in useful_words:
     wordvecs[word] = word_vecs[word]
