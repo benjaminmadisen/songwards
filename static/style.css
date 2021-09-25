@@ -12,6 +12,8 @@ img{
     font-family: 'Source Sans Pro', sans-serif;
   }
   #o {
+      height: .7em;
+      width: .7em;
       margin-top: 10px;
   }
   #app{
