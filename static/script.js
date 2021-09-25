@@ -3,10 +3,10 @@ Vue.component('display-song-item', {
     props: ['song'],
     template: `
       <div class="display-song-item">
-        <button class="add_remove" v-on:click="app.removeSelectedSong(song)">
-          -
-        </button>
         <div class="song-info">
+          <button class="add_remove" v-on:click="app.removeSelectedSong(song)">
+            <span class="material-icons md-36">&#xe15c;</span>
+          </button>
           <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}
         </div>
         <div class="song-score">
@@ -23,7 +23,7 @@ Vue.component('display-song-item', {
           <img v-bind:src="song.image_url">{{ song.name }} - {{ song.artist }}
         </div>
         <button class="add_remove" v-on:click="app.addSearchedSong(song)">
-          +
+          <span class="material-icons md-36">&#xe147;</span>
         </button>
       </div>
     `
@@ -76,7 +76,7 @@ var app = new Vue({
                 inp_array[inp_array.length-1] = 1;
               }
               inpvec = tf.tensor([inp_array]);
-              app.model.predict(inpvec).array().then(array => song.score = array[0][0]);
+              app.model.predict(inpvec).array().then(array => song.score = Math.round(100*array[0][0]));
             }
           };
         },

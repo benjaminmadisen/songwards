@@ -2,45 +2,109 @@ img{
     height: 32px;
     width: 32px;
   }
-  #body{
-    min-height: 100vh;
-    max-width: 50rem;
-    width: 100%;
-    justify-content: center;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  #app{
+  .material-icons.md-48 { font-size: 48px; }
+  .material-icons.md-36 { font-size: 36px; }
+  .material-icons.md-24 { font-size: 24px; }
+  body{
     display: flex;
     flex-direction: column;
     align-items: center;
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+  #o {
+      margin-top: 10px;
+  }
+  #app{
+    display: flex;
+    max-width: 1600px;
+    min-width: 800px;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+  }
+  #top-row{
+    font-size: 48px;
+    min-height: 10vh;
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    flex-direction: row;
+    width: 100%;
   }
   #main-section{
+    width: 100%;
+    min-height: 80vh;
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: space-between;
   }
-  #word-box{
-    padding-right: 5rem;
+  #word-box {
+    
+    width: 25%;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 20vh;
+    margin-bottom: 10vh;
+  }
+  #word-search {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 5vh;
+  }
+  #word-search-box {
+    margin-right: 10%;
+  }
+
+  #song-list {
+    border-left: solid black 1px;
+    width: 75%;
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
   }
   #search-songs{
-    height: 200px;
+    min-height: 20vh;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
   }
+  #song-search {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 5vh;
+  }
+  #song-search-box {
+    margin-right: 10%;
+  }
+  #current-word {
+    margin-right: 12%;
+    font-size: 5em;
+  }
   .display-song-item{
-    height: 40px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    height: 4vh;
+    padding-top: .5vh;
+    padding-bottom: .5vh;
+    min-width: 500px;
+    max-width: 800px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
   .search-song-item{
-    height: 40px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    height: 4vh;
+    padding-top: .5vh;
+    padding-bottom: .5vh;
+    min-width: 500px;
+    max-width: 800px;
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -53,16 +117,16 @@ img{
     padding-right: 5px;
     padding-left: 5px;
   }
-  button.add_remove {
+  button {
     border: none;
-    border-radius: 50%;
-    background-color: black;
-    color: white;
-    width: 22px;
-    height: 20px;
-    opacity: 0.5;
+    background-color: inherit;
+    opacity: 0.3;
     transition: 0.1s;
   }
-  button.add_remove:hover {
-    opacity: 1;
+  button:hover {
+    opacity: 0.7;
+  }
+  input {
+      max-width: 100%;
+    font-size: 24;
   }

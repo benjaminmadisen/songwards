@@ -1,6 +1,11 @@
 <html>
 <head>
   <title>Songwards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+  rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
   <link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -8,12 +13,19 @@
 
   <div id="app">
     <div id="top-row">
+      songw
+      <span id="o" class="material-icons md-36">&#xe039;</span>
+      rds
+      
+      
     </div>
     <div id="main-section">
       <div id="word-box">
-        <input id='word-search' type=text v-model="wordText">
-        <button v-on:click='searchWord'>Search</button>
         <div id='current-word'>[[ currentWord ]]</div>
+        <div id='word-search'>
+          <input id='word-search-box' v-on:keyup.enter='searchWord' type=text v-model="wordText">
+          <button id='word-search-button' v-on:click='searchWord'><span class="material-icons md-36">&#xef3e;</span></button>
+        </div>
       </div>
       <div id="song-list">
         
@@ -31,8 +43,8 @@
             v-bind:song="song"
           ></search-song-item>
           <div id="song-search">
-            <input id='song-search-box' type=text v-model="searchText">
-            <button v-on:click='searchSongs'>Search</button>
+            <input id='song-search-box' v-on:keyup.enter='searchSongs' type=text v-model="searchText">
+            <button v-on:click='searchSongs'><span class="material-icons md-36">&#xe8b6;</span></button>
           </div>
         </div>
       </div>
