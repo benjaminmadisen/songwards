@@ -7,6 +7,7 @@ import requests
 import numpy as np
 import yaml
 import pickle
+import json
 
 client = secretmanager.SecretManagerServiceClient()
 
@@ -22,17 +23,18 @@ with open(".songwards_config", 'r') as config_file:
 audio_features_list = list(config_vars['audio_features'].keys())
 audio_features_mins = np.array([config_vars['audio_features'][af]['min'] for af in audio_features_list])
 audio_features_maxs = np.array([config_vars['audio_features'][af]['max'] for af in audio_features_list])
+valid_tfjs_paths = config_vars['valid_tfjs_paths']
 storage_client = storage.Client()
 bucket = storage_client.bucket(config_vars['bucket_path'])
 
-def get_model():
-    global global_interpreter
-    if global_interpreter is None:
-        blob = bucket.blob(config_vars['model_path'])
-        model_content = blob.download_as_string()
-        global_interpreter = tflite.Interpreter(model_content=model_content)
-        global_interpreter.allocate_tensors()
-    return global_interpreter
+
+def get_file_from_blob(file_name):
+    global global_cache
+    valid_path = valid_tfjs_paths[file_name]
+    if valid_path not in global_cache:
+        blob = bucket.blob(valid_path)
+        global_cache[valid_path] = blob.download_as_bytes()
+    return global_cache[valid_path]
 
 def get_wordvecs():
     global global_wordvecs
@@ -69,6 +71,7 @@ def get_song_object_from_track_item(item):
             'name': item['name'],
             'artist': item['artists'][0]['name'],
             'image_url': [img['url'] for img in item['album']['images'] if img['height'] < 100][0],
+            'vector': get_track_input(item['id']).astype(float).tolist(),
             'score': -1}
 
 def make_spotify_request(endpoint, payload):
@@ -124,37 +127,9 @@ def get_track_input(uri):
 def get_text_input(search_text):
     wv = get_wordvecs()
     if search_text in wv:
-        return wv[search_text]
+        return wv[search_text].astype(float).tolist()
     else:
         return None
-
-def score_uris(search_text, uris):
-    text_inp = get_text_input(search_text)
-    if text_inp is None:
-        return None
-    track_inp = []
-    for uri in uris:
-        uri_track_inp = get_track_input(uri)
-        if uri_track_inp is None:
-            return None
-        track_inp.append(uri_track_inp)
-    track_inp = np.concatenate(track_inp)
-    full_inp = np.zeros((track_inp.shape[0], track_inp.shape[1]+text_inp.shape[0]))
-    full_inp[:,:text_inp.shape[0]] = text_inp
-    full_inp[:,text_inp.shape[0]:] = track_inp
-    full_inp = full_inp.astype(np.float32)
-    model = get_model()
-    if model is None:
-        return None
-    input_details = model.get_input_details()
-    output_details = model.get_output_details()
-    model.set_tensor(input_details[0]['index'], full_inp)
-    model.invoke()
-    output_data = model.get_tensor(output_details[0]['index'])
-    out = {}
-    for uri_ix in range(len(uris)):
-        out[uris[uri_ix]] = float(output_data[uri_ix][0])
-    return out
 
 @app.route('/')
 def root():
@@ -183,15 +158,6 @@ def search_songs():
         return {'songs':tracks}
     return {'songs':[]}
 
-@app.route('/score_songs')
-def score_songs():
-    search_text = request.args.get('text', None)
-    uris = request.args.get('uris', None).split(",")
-    if search_text is not None:
-        if len(uris) > 0:
-            return {'scores': score_uris(search_text, uris)}
-    return {'scores':{}}
-
 @app.route('/add_uri', methods=['POST'])
 def add_uri():
     if 'songwards_uris' not in session:
@@ -206,6 +172,23 @@ def remove_uri():
         if request.form['uri'] in session['songwards_uris']:
             session['songwards_uris'] = session['songwards_uris'].replace(request.form['uri']+",","")
     return redirect(url_for('root'))
+
+@app.route('/model_info/<file_name>')
+def model_info(file_name):
+    if file_name in list(valid_tfjs_paths.keys()):
+        blob_file = get_file_from_blob(file_name)
+        if '.json' in file_name:
+            return json.loads(blob_file)
+        return blob_file
+    return None
+
+@app.route('/get_text_vector')
+def get_text_vector():
+    search_text = request.args.get('text', None)
+    if search_text is not None:
+        return {'vector': get_text_input(search_text)}
+    return {'vector':[]}
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)

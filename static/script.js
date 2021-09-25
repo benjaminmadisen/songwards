@@ -1,3 +1,4 @@
+
 Vue.component('display-song-item', {
     props: ['song'],
     template: `
@@ -24,6 +25,8 @@ var app = new Vue({
     el: '#app',
     delimiters: ["[[", "]]"],
     data: {
+      model: false,
+      wordVector: [0,0,0,0,0,0,0,0,0,0],
       searchText: "",
       wordText: "",
       currentWord: "",
@@ -46,7 +49,7 @@ var app = new Vue({
         },
         searchWord: function () {
           let xhr = new XMLHttpRequest();
-          xhr.open('GET', '/score_songs?text='+this.wordText+'&uris='+this.getUris());
+          xhr.open('GET', '/get_text_vector?text='+this.wordText);
           xhr.responseType = 'json';
           xhr.send();
           this.currentWord = this.wordText;
@@ -55,8 +58,11 @@ var app = new Vue({
           var app = this;
           xhr.onload = function() {
             let responseObj = xhr.response;
-            for (uri in responseObj.scores){
-              app.selectedSongs.filter(function(s) { return s.uri == uri})[0].score = responseObj.scores[uri];
+            app.wordVector = responseObj.vector;
+            for (song_id in app.selectedSongs){
+              let song = app.selectedSongs[song_id];
+              inpvec = tf.tensor([app.wordVector.concat(song.vector[0])]);
+              app.model.predict(inpvec).array().then(array => song.score = array[0][0]);
             }
           };
         },
@@ -74,6 +80,7 @@ var app = new Vue({
             name: song.name,
             artist: song.artist,
             image_url: song.image_url,
+            vector: song.vector,
             score: -1
           });
           var formData = new FormData();
@@ -93,6 +100,10 @@ var app = new Vue({
         }
       },
       created: function () {
+        let temp_app = this;
+        tf.loadLayersModel('model_info/model.json').then(
+          function(value) {temp_app.model = value;}
+        );
         let xhr = new XMLHttpRequest();
         xhr.open('GET', '/get_songs');
         xhr.responseType = 'json';
@@ -105,5 +116,6 @@ var app = new Vue({
             selectedSongs.push(song);
           }
         };
+        
       }
   })

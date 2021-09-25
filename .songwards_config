@@ -35,3 +35,6 @@ audio_features:
 bucket_path: songwards.appspot.com
 model_path: tflite_model
 wordvecs_path: wordvecs
+valid_tfjs_paths:
+    model.json: tfjs1
+    group1-shard1of1.bin: tfjs2
