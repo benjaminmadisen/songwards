@@ -111,12 +111,12 @@ def get_track_input_from_spotify(uri):
     audio_features = make_spotify_request('audio-features',{'ids':uri})['audio_features']
     #track_info = make_spotify_request('tracks',{'ids':uri})['tracks']
 
-    af_vec = np.array([[track[keyname] for keyname in audio_features_list] for track in audio_features])
+    af_vec = np.array([[track[keyname] for keyname in audio_features_list] for track in audio_features]+[0,0])
     af_vec = (af_vec-audio_features_mins)/(audio_features_maxs-audio_features_mins)
     global_cache[uri] = af_vec
     return af_vec
 
-def get_track_input(uri):
+def get_track_input(uri, track_name, artist_name):
     global global_cache
     if uri in global_cache:
         return global_cache[uri]
