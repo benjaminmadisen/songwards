@@ -114,7 +114,6 @@ def get_track_input_from_spotify(uri):
 
     af_vec = np.array([[track[keyname] for keyname in audio_features_list] +[0,0] for track in audio_features])
     af_vec = (af_vec-audio_features_mins)/(audio_features_maxs-audio_features_mins)
-    global_cache[uri] = af_vec
     return af_vec
 
 def get_track_input(uri):
