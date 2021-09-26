@@ -37,6 +37,8 @@ var app = new Vue({
       searchText: "",
       wordText: "",
       currentWord: "",
+      errorMessage: "",
+      songErrorMessage: "",
       selectedSongs: [],
       searchedSongs: []
     },
@@ -56,16 +58,27 @@ var app = new Vue({
         },
         searchWord: function () {
           let xhr = new XMLHttpRequest();
-          xhr.open('GET', '/get_text_vector?text='+this.wordText);
+          xhr.open('GET', '/get_text_vector?text='+this.wordText.toLowerCase());
           xhr.responseType = 'json';
           xhr.send();
           this.currentWord = this.wordText;
           this.wordText = "";
+          this.errorMessage = "";
 
           var app = this;
           xhr.onload = function() {
             let responseObj = xhr.response;
             app.wordVector = responseObj.vector;
+            console.log(responseObj.vector);
+            if (responseObj.vector == false){
+              app.errorMessage = "sorry, we don't have data for this word";
+              for (song_id in app.selectedSongs){
+                let song = app.selectedSongs[song_id];
+                song.score = -1;
+                song.score_color = "none";
+              }
+            }
+            else{
             for (song_id in app.selectedSongs){
               let song = app.selectedSongs[song_id];
               inp_array = app.wordVector.concat(song.vector[0]);
@@ -82,7 +95,7 @@ var app = new Vue({
                 greenscore = Math.round(28+2*song.score)
                 song.score_color = "rgb("+redscore+","+greenscore+",128)";
               });
-            }
+            }}
           };
         },
         getUris: function () {
@@ -94,21 +107,27 @@ var app = new Vue({
           return out;
         },
         addSearchedSong: function (song) {
-          this.selectedSongs.push({
-            uri: song.uri,
-            name: song.name,
-            artist: song.artist,
-            image_url: song.image_url,
-            vector: song.vector,
-            score: -1,
-            score_color: "none"
-          });
-          var formData = new FormData();
-          formData.append("uri", song.uri);
-          var req = new XMLHttpRequest();
-          req.open("POST", "/add_uri");
-          req.send(formData);
-          this.searchedSongs = this.searchedSongs.filter(function(s) { return s.uri !== song.uri })
+          if (this.selectedSongs.length < 10) {
+            this.selectedSongs.push({
+              uri: song.uri,
+              name: song.name,
+              artist: song.artist,
+              image_url: song.image_url,
+              vector: song.vector,
+              score: -1,
+              score_color: "none"
+            });
+            var formData = new FormData();
+            formData.append("uri", song.uri);
+            var req = new XMLHttpRequest();
+            req.open("POST", "/add_uri");
+            req.send(formData);
+            this.searchedSongs = this.searchedSongs.filter(function(s) { return s.uri !== song.uri })
+          }
+          else {
+            this.songErrorMessage = "maximum of ten active songs";
+          }
+
         },
         removeSelectedSong: function (song) {
           var formData = new FormData();
@@ -117,6 +136,7 @@ var app = new Vue({
           req.open("POST", "/remove_uri");
           req.send(formData);
           this.selectedSongs = this.selectedSongs.filter(function(s) { return s.uri !== song.uri })
+          this.songErrorMessage = "";
         }
       },
       created: function () {

@@ -127,7 +127,7 @@ def get_track_input(uri):
 def get_text_input(search_text):
     wv = get_wordvecs()
     if search_text in wv:
-        return wv[search_text].astype(float).tolist()
+        return (.5+wv[search_text].astype(float)/20.0).tolist()
     else:
         return None
 
@@ -186,8 +186,10 @@ def model_info(file_name):
 def get_text_vector():
     search_text = request.args.get('text', None)
     if search_text is not None:
-        return {'vector': get_text_input(search_text)}
-    return {'vector':[]}
+        vector = get_text_input(search_text)
+        if vector is not None:
+            return {'vector': get_text_input(search_text)}
+    return {'vector':False}
 
 
 if __name__ == '__main__':

@@ -29,6 +29,7 @@
           <input id='word-search-box' v-on:keyup.enter='searchWord' placeholder="score phrase" type=text v-model="wordText">
           <button id='word-search-button' v-on:click='searchWord'><span class="material-icons md-36">&#xef3e;</span></button>
         </div>
+        <div id='word-search-error'>[[ errorMessage ]]</div>
       </div>
       <div id="song-list">
         
@@ -49,6 +50,7 @@
             <input id='song-search-box' v-on:keyup.enter='searchSongs' placeholder="search songs" type=text v-model="searchText">
             <button v-on:click='searchSongs'><span class="material-icons md-36">&#xe8b6;</span></button>
           </div>
+          <div id='song-search-error'>[[ songErrorMessage ]]</div>
         </div>
       </div>
     </div>
