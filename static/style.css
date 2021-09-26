@@ -88,6 +88,8 @@ img{
     margin-right: 10%;
   }
   #current-word {
+    max-width: 100%;
+    word-wrap: break-word;
     margin-right: 12%;
     font-size: 5em;
   }
