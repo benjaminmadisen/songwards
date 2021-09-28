@@ -16,12 +16,13 @@ app.secret_key = os.urandom(50)
 global_access_token = None
 global_interpreter = None
 global_wordvecs = None
+global_genrevecs = None
 global_cache = {}
 with open(".songwards_config", 'r') as config_file:
     config_vars = yaml.load(config_file, Loader=yaml.CLoader)
 audio_features_list = list(config_vars['audio_features'].keys())
-audio_features_mins = np.array([config_vars['audio_features'][af]['min'] for af in audio_features_list]+[0,0])
-audio_features_maxs = np.array([config_vars['audio_features'][af]['max'] for af in audio_features_list]+[1,1])
+audio_features_mins = np.array([0,0,0,0,0]+[config_vars['audio_features'][af]['min'] for af in audio_features_list]+[0,0])
+audio_features_maxs = np.array([1,1,1,1,1]+[config_vars['audio_features'][af]['max'] for af in audio_features_list]+[1,1])
 valid_tfjs_paths = config_vars['valid_tfjs_paths']
 storage_client = storage.Client()
 bucket = storage_client.bucket(config_vars['bucket_path'])
@@ -42,6 +43,14 @@ def get_wordvecs():
         global_wordvecs = pickle.loads(blob.download_as_bytes())
         
     return global_wordvecs
+
+def get_genrevecs():
+    global global_genrevecs
+    if global_genrevecs is None:
+        blob = bucket.blob(config_vars['genrevecs_path'])
+        global_genrevecs = pickle.loads(blob.download_as_bytes())
+        
+    return global_genrevecs
 
 def get_gcloud_secret(secret_id):
     name = "projects/songwards/secrets/%s/versions/latest" % secret_id
@@ -109,10 +118,21 @@ def search_spotify(search_text):
 
 def get_track_input_from_spotify(uri):
     global global_cache
+    genrevecs = get_genrevecs()
     audio_features = make_spotify_request('audio-features',{'ids':uri})['audio_features']
-    #track_info = make_spotify_request('tracks',{'ids':uri})['tracks']
+    track_info = make_spotify_request('tracks',{'ids':uri})['tracks']
+    artist_features = make_spotify_request('artists',{'ids':track_info[0]['artists'][0]['id']})['artists']
+    genres = artist_features[0]["genres"]
+    genre_vec = [0,0,0,0,0]
+    if len(genres) > 0:
+        any_genre = False
+        for genre in genres:
+            if genre in genrevecs:
+                any_genre = True
+        if any_genre:
+            genre_vec = (0.5+(np.mean(np.array([genrevecs[genre] for genre in genres if genre in genrevecs]), axis=0)/20.0)).tolist()
 
-    af_vec = np.array([[track[keyname] for keyname in audio_features_list] +[0,0] for track in audio_features])
+    af_vec = np.array([genre_vec+[track[keyname] for keyname in audio_features_list] +[0,0] for track in audio_features])
     af_vec = (af_vec-audio_features_mins)/(audio_features_maxs-audio_features_mins)
     return af_vec
 

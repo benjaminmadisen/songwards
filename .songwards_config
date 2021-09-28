@@ -34,7 +34,8 @@ audio_features:
         max: 200
 bucket_path: songwards.appspot.com
 model_path: tflite_model
-wordvecs_path: wordvecs
+wordvecs_path: alt_wordvecs
+genrevecs_path: genre_wordvecs
 valid_tfjs_paths:
-    model.json: tfjs1
-    group1-shard1of1.bin: tfjs2
+    model.json: 'genre_model.json'
+    group1-shard1of1.bin: 'genre_group1-shard1of1.bin'

@@ -16,10 +16,23 @@
 
   <div id="app">
     <div id="top-row">
-      s
-      <img id="o" src="{{ url_for('static', filename='alticon.png') }}">
-      ngwards
+      <div id="title">
+        s
+        <img id="o" src="{{ url_for('static', filename='alticon.png') }}">
+        ngwards
+      </div>
+      <div id="tooltip">
+        <span class="material-icons md-36">&#xe8fd;</span>
+        
+        <span class="tooltiptext">
+          Welcome to songwards!* To get started, add a few songs using the search box below,
+          then enter a word in the box on the right - the model running in the background will evaluate
+          each of those songs based on the word you enter, and show you their relative score from 0 to 100.
+          <br><br>*It's a bad pun on song-words and onwards, but it's *my* bad pun.
+        </span>
+      </div>
       
+
       
     </div>
     <div id="main-section">

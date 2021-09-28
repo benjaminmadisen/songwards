@@ -24,7 +24,15 @@ img{
     flex-direction: column;
     align-items: center;
   }
-  #top-row{
+  #top-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: row;
+    min-height: 10vh;
+  }
+  #title{
     font-size: 48px;
     min-height: 10vh;
     display: flex;
@@ -139,3 +147,24 @@ img{
       max-width: 100%;
     font-size: 24;
   }
+#tooltip {
+  position: relative;
+}
+
+#tooltip .tooltiptext {
+  text-align: left;
+  width: 30vw;
+  padding: 5px;
+  border-radius: 5px;
+  border: solid black 1px;
+  visibility: hidden;
+  top: 105%;
+  right: 105%;
+  position: absolute;
+  z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+#tooltip:hover .tooltiptext {
+  visibility: visible;
+}
