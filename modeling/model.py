@@ -2,6 +2,21 @@ from gensim.models import Word2Vec
 import os
 import re
 import pickle
+import numpy as np
+import tensorflow as tf
+import tensorflowjs as tfjs
+
+def generate_tf_dataset_from_files(db_path):
+    ix = 1
+    db_path = str(db_path)[2:-1]
+    while os.path.exists("%sbin_targets_%i.npy" % (db_path, ix)):
+        with open("%sbin_targets_%i.npy" % (db_path, ix), "rb") as f:
+            targets = np.load(f)
+        with open("%sbin_trains_%i.npy" % (db_path, ix), "rb") as f:
+            af_vecs = np.load(f)
+        for rix in range(targets.shape[0]-1):
+            yield af_vecs[rix,:], [targets[rix]]
+        ix += 1
 
 class TextCorpus:
     """ A simple iterator used by gensim's Word2Vec class.
@@ -85,3 +100,83 @@ class WordvectorModel:
             out_dict[word] = word_vecs[word]
         blob = storage_bucket.blob(gcloud_path)
         blob.upload_from_string(pickle.dumps(out_dict))
+
+class SimpleMatchModel:
+    """ A simple model, estimating probability that a pair of (playlist name, track) is from the data, or random.
+
+    """
+    
+    def __init__(self, db_path:str, train_data_path:str):
+        """ Returns an instance of SimpleMatchModel.
+
+        Args:
+            db_path (str): directory containing output data
+            train_data_path (str): dir name within db_path of training data.
+
+        """
+        self.db_path = db_path
+        self.train_data_path = train_data_path
+        self.model = None
+    
+    def generate_tf_dataset(self):
+        """ Returns a tf Dataset based on input path info.
+        
+        """
+        return tf.data.Dataset.from_generator(
+            generate_tf_dataset_from_files,
+            args=[self.db_path+self.train_data_path],
+            output_types=(tf.float32, tf.float32),
+            output_shapes=(tf.TensorShape((28,)), tf.TensorShape((1,))))
+
+    def train_simple_model(self):
+        """ Trains a simple keras sequential model using dataset.
+
+        """
+        dataset = self.generate_tf_dataset().batch(32).shuffle(buffer_size=1000)
+        self.model = tf.keras.Sequential([
+            tf.keras.Input(shape=(28,)),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(2, activation='softmax')])
+        self.model.compile(
+            optimizer="adam",
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
+            metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+        self.model.fit(dataset, epochs=5)
+    
+    def save_model_to_local(self, save_path:str, replace:bool=True) -> None:
+        """ Saves a pre-trained model locally.
+
+        Args:
+            save_path (str): location to save model.
+            replace (bool): should we replace an already saved model?
+
+        """
+        if os.path.isdir(self.db_path+save_path):
+            if replace:
+                dir_files = os.listdir(self.db_path+save_path)
+                for file in dir_files:
+                    os.remove(self.db_path+save_path+file)
+                os.rmdir(self.db_path+save_path)
+            else:
+                raise FileExistsError()
+        tfjs.converters.save_keras_model(self.model, self.db_path+save_path)
+
+    def save_model_to_gcloud(self, save_path: str, gcloud_paths:dict, storage_bucket)-> None:
+        """ Saves a pre-trained model to gcloud.
+
+        Args:
+            save_path (str): location of saved model.
+            gcloud_paths (dict): mapping from file names to gcloud file names.
+            storage_bucket: a google cloud storage bucket object.
+
+        """
+        model_outputs = os.listdir(self.db_path+save_path)
+        for model_output in model_outputs:
+            if model_output in gcloud_paths:
+                blob = storage_bucket.blob(gcloud_paths[model_output])
+                blob.upload_from_filename(self.db_path+save_path+model_output)
+            else:
+                print(model_output)
+            os.remove(self.db_path+save_path+model_output)
+        os.rmdir(self.db_path+save_path)
