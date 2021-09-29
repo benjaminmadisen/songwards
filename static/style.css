@@ -152,6 +152,8 @@ img{
 }
 
 #tooltip .tooltiptext {
+  background-color: ghostwhite;
+  opacity: 1;
   text-align: left;
   width: 30vw;
   padding: 5px;
