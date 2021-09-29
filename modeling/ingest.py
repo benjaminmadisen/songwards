@@ -20,7 +20,7 @@ class SpotifyDatabaseIngestor:
         self.db_path = db_path
         self.db_name = db_name
     
-    def retrieve_db_file(self, file_name:str="temp.sql", replace:bool=True):
+    def retrieve_db_file(self, file_name:str="temp.sql", replace:bool=True) -> None:
         """ Downloads the database file to file_name.
 
         Args:
@@ -35,7 +35,7 @@ class SpotifyDatabaseIngestor:
             os.mkdir(self.db_path)
         urlretrieve(self.source_url, self.db_path+file_name)
 
-    def create_database_from_file(self, file_name:str="temp.sql", replace:bool=True, remove_sql:bool=True):
+    def create_database_from_file(self, file_name:str="temp.sql", replace:bool=True, remove_sql:bool=True) -> None:
         """ Builds a database using the downloaded SQL file.
 
         Args:
