@@ -1,5 +1,7 @@
 import sqlite3
 from main import make_spotify_request
+from gensim.utils import simple_preprocess
+import os
 
 class SpotifyTrackFeatureGenerator:
     """ A class to transform the spotify DB to add track feature info.
@@ -120,7 +122,7 @@ class SpotifyTrackFeatureGenerator:
                 con.commit()
             except:
                 pass
-            
+
     def get_insert_string(self, audio_features:dict, artist_features:dict) -> str:
         """ Get string to use in SQLite INSERT clause using feature dictionaries.
 
@@ -146,3 +148,87 @@ class SpotifyTrackFeatureGenerator:
         return "INSERT INTO track_attributes VALUES "+", ".join(feature_strings)+";"
 
 
+class SpotifyCorpusTextGenerator:
+    """ A class to generate files as corpus inputs to Word2Vec.
+
+    """
+    def __init__(self, db_path:str, db_name:str):
+        """ Creates a SpotifyCorpusTextGenerator instance.
+
+        Args:
+            db_path (str): path to the local directory where the db should live.
+            db_name (str): file name for the local db.
+
+        """
+        self.db_path = db_path
+        self.db_name = db_name
+    
+    def generate_random_playlist_sample(self, n_playlists:int=100000):
+        """ Add a table of n_playlists random playlists and their track pairs
+
+        Args:
+            n_playlists (int): number of playlists to sample
+
+        """
+        con = sqlite3.connect(self.db_path+self.db_name)
+        cur = con.cursor()
+        cur.execute("DROP TABLE IF EXISTS temp_playlist")
+        cur.execute("""CREATE TABLE temp_playlist
+                           AS SELECT A.id, A.name
+                         FROM playlist A 
+                        ORDER BY RANDOM() LIMIT %s""" % n_playlists)
+        con.commit()
+        cur.execute("DROP TABLE IF EXISTS temp_track_playlist")
+        cur.execute("""CREATE TABLE temp_track_playlist
+                           AS SELECT A.id, A.name, C.*
+                         FROM temp_playlist A
+                         JOIN track_playlist1 B ON A.id = B.playlist_id
+                         JOIN track_attributes C ON B.track_id = C.track_id""")
+        con.commit()
+    
+    def generate_word_vector_text(self, text_path:str, replace:bool=True):
+        """ Generates a file at text_path for use in building word vectors.
+
+        Args:
+            text_path (str): location for text output.
+            replace (bool): should the file be replaced if it exists?
+
+        """
+        if os.path.exists(self.db_path+text_path):
+            if replace:
+                os.remove(self.db_path+text_path)
+            else:
+                raise FileExistsError()
+        con = sqlite3.connect(self.db_path+self.db_name)
+        cur = con.cursor()
+        with open(self.db_path+text_path, "w") as tf:
+            for row in cur.execute("SELECT track_id, name FROM temp_track_playlist"):
+                tf.write(" ".join([row[0]] + simple_preprocess(row[1], deacc=True))+" \n")
+    
+    def generate_genre_vector_text(self, text_path:str, replace:bool=True):
+        """ Generates a file at text_path for use in building genre vectors.
+
+        Args:
+            text_path (str): location for text output.
+            replace (bool): should the file be replaced if it exists?
+
+        """
+        if os.path.exists(self.db_path+text_path):
+            if replace:
+                os.remove(self.db_path+text_path)
+            else:
+                raise FileExistsError()
+        con = sqlite3.connect(self.db_path+self.db_name)
+        cur = con.cursor()
+        with open(self.db_path+text_path, "w") as tf:
+            cur_genres = []
+            cur_track_id = -1
+            for row in cur.execute("SELECT id, genres FROM temp_track_playlist"):
+                if row[0] != cur_track_id:
+                    tf.write(" ".join(cur_genres)+"\n")
+                    cur_genres = []
+                for genre in row[1].split(" "):
+                    cur_genres.append(genre)
+
+
+            
