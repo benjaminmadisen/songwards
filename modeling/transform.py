@@ -205,10 +205,12 @@ class SpotifyInputFileGenerator:
         con.commit()
         cur.execute("DROP TABLE IF EXISTS temp_tracks_details")
         cur.execute("""CREATE TABLE temp_tracks_details
-                           AS SELECT A.*, B.name AS track_name, C.name AS playlist_name
+                           AS SELECT A.*, B.name AS track_name, C.name AS playlist_name, E.name AS artist_name
                          FROM temp_tracks A
                          JOIN track B ON A.track_id = B.id
-                         JOIN playlist C ON A.playlist_id = C.id""")
+                         JOIN playlist C ON A.playlist_id = C.id
+                         JOIN track_artist1 D ON D.track_id = B.id
+                         JOIN artist E ON D.artist_id = E.id""")
         con.commit()
     
     def generate_word_vector_text(self, text_path:str, replace:bool=True):
@@ -267,6 +269,8 @@ class SpotifyInputFileGenerator:
             replace (bool): should the file be replaced if it exists?
 
         """
+        word_vector_model = word_vector_model.wv
+        genre_vector_model = genre_vector_model.wv
         if os.path.isdir(self.db_path+output_path):
             if replace:
                 dir_files = os.listdir(self.db_path+output_path)
@@ -277,9 +281,10 @@ class SpotifyInputFileGenerator:
                 raise FileExistsError()
         os.mkdir(self.db_path+output_path)
         word_freq = self.get_word_vector_freq(word_vector_model)
-        numeric_features = [feature for feature in list(features.keys()) if features[feature[0]] == "numeric"]
-        genre_features = [feature for feature in list(features.keys()) if features[feature[0]] == "genre"]
-        name_features = [feature for feature in list(features.keys()) if features[feature[0]] == "name"]
+        numeric_features = [feature for feature in list(features.keys()) if features[feature][0] == "numeric"]
+        genre_features = [feature for feature in list(features.keys()) if features[feature][0] == "genre"]
+        name_features = [feature for feature in list(features.keys()) if features[feature][0] == "name"]
+
         sel_string = ", ".join(numeric_features+genre_features+name_features)
         num_features_mins = np.array([features[feature][1] for feature in numeric_features])
         num_features_maxs = np.array([features[feature][2] for feature in numeric_features])
@@ -287,6 +292,7 @@ class SpotifyInputFileGenerator:
         
         trains = np.zeros((1,len(word_vector_model[word_vector_model.index_to_key[0]])+len(genre_vector_model[genre_vector_model.index_to_key[0]])+len(numeric_features)+len(name_features)))
         targets = np.zeros((1))
+        
 
         con = sqlite3.connect(self.db_path+self.db_name)
         cur = con.cursor()
@@ -302,14 +308,14 @@ class SpotifyInputFileGenerator:
             
             genre_vec = [genre_vector_model[genre] for genre in gen_features.split(" ") if genre in genre_vector_model.index_to_key]
             if len(genre_vec) == 0:
-                genre_vec = np.zeros(genre_vector_model[genre_vector_model.index_to_key[0]])
+                genre_vec = np.zeros(genre_vector_model[genre_vector_model.index_to_key[0]].shape)
             else:
                 genre_vec = np.mean(np.array(genre_vec), axis=0)
             genre_vec = 0.5+(np.array([genre_vec])/20.0)
             
             word_vec = [word_vector_model[word] for word in rowwords if word in word_vector_model.index_to_key]
             if len(word_vec) == 0:
-                word_vec = np.zeros(word_vector_model[word_vector_model.index_to_key[0]])
+                word_vec = np.zeros(word_vector_model[word_vector_model.index_to_key[0]].shape)
             else:
                 word_vec = np.mean(np.array(word_vec), axis=0)
             word_vec = 0.5+(np.array([word_vec])/20.0)
@@ -349,6 +355,7 @@ class SpotifyInputFileGenerator:
                 
             trains = np.concatenate([trains, train])
             targets = np.concatenate([targets, targs])
+            
             if rix % 5000 == 0:
                 print(rix)
                 targets = targets[1:]
@@ -374,3 +381,4 @@ class SpotifyInputFileGenerator:
             probs.append(vector_model.get_vecattr(phr, 'count'))
             summa += vector_model.get_vecattr(phr, 'count')
         probs = np.array(probs)/float(summa)
+        return probs

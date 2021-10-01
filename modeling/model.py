@@ -128,20 +128,35 @@ class SimpleMatchModel:
             output_types=(tf.float32, tf.float32),
             output_shapes=(tf.TensorShape((28,)), tf.TensorShape((1,))))
 
-    def train_simple_model(self):
-        """ Trains a simple keras sequential model using dataset.
+    def init_simple_model(self, model_structure=None):
+        """ Instantiates a simple keras sequential model.
+
+        Args:
+            model_structure: an uncompiled keras Sequential model, or None to use default.
 
         """
-        dataset = self.generate_tf_dataset().batch(32).shuffle(buffer_size=1000)
-        self.model = tf.keras.Sequential([
-            tf.keras.Input(shape=(28,)),
-            tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(2, activation='softmax')])
+        if model_structure is None:
+            self.model = tf.keras.Sequential([
+                tf.keras.Input(shape=(28,)),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.Dense(64, activation='relu'),
+                tf.keras.layers.Dense(64, activation='relu'),
+                tf.keras.layers.Dense(2, activation='softmax')])
+        else:
+            self.model = model_structure
         self.model.compile(
             optimizer="adam",
             loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
             metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+    
+    def train_simple_model(self, epochs:int=5):
+        """ Trains the model for epochs epochs.
+
+        Args:
+            epochs: number of epochs to train for.
+
+        """
+        dataset = self.generate_tf_dataset().batch(32).shuffle(buffer_size=1000)
         self.model.fit(dataset, epochs=5)
     
     def save_model_to_local(self, save_path:str, replace:bool=True) -> None:
