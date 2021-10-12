@@ -69,5 +69,7 @@ class SpotifyDatabaseIngestor:
                             cur.execute(clause)
                             con.commit()
                         clause = ""
+        cur.execute("CREATE INDEX trackplaylist1_playlist_id ON track_playlist1 (playlist_id)")
+        con.commit()
         if remove_sql:
             os.remove(self.db_path+file_name)
