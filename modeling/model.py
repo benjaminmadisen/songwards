@@ -9,13 +9,14 @@ import tensorflowjs as tfjs
 def generate_tf_dataset_from_files(db_path):
     ix = 1
     db_path = str(db_path)[2:-1]
-    while os.path.exists("%sbin_targets_%i.npy" % (db_path, ix)):
-        with open("%sbin_targets_%i.npy" % (db_path, ix), "rb") as f:
-            targets = np.load(f)
-        with open("%sbin_trains_%i.npy" % (db_path, ix), "rb") as f:
-            af_vecs = np.load(f)
-        for rix in range(targets.shape[0]-1):
-            yield af_vecs[rix,:], [targets[rix]]
+    while ix < 200:
+        if os.path.exists("%sbin_targets_%i.npy" % (db_path, ix)):
+            with open("%sbin_targets_%i.npy" % (db_path, ix), "rb") as f:
+                targets = np.load(f)
+            with open("%sbin_trains_%i.npy" % (db_path, ix), "rb") as f:
+                af_vecs = np.load(f)
+            for rix in range(targets.shape[0]-1):
+                yield af_vecs[rix,:], [targets[rix]]
         ix += 1
 
 class TextCorpus:
@@ -106,29 +107,38 @@ class SimpleMatchModel:
 
     """
     
-    def __init__(self, db_path:str, train_data_path:str):
+    def __init__(self, db_path:str, data_path:str):
         """ Returns an instance of SimpleMatchModel.
 
         Args:
             db_path (str): directory containing output data
-            train_data_path (str): dir name within db_path of training data.
+            data_path (str): dir name within db_path of training data.
 
         """
         self.db_path = db_path
-        self.train_data_path = train_data_path
+        self.train_data_path = data_path+"train/"
+        self.val_data_path = data_path+"val/"
         self.model = None
     
-    def generate_tf_dataset(self):
+    def generate_tf_dataset(self, input_vector_length:int):
         """ Returns a tf Dataset based on input path info.
+
+        Args:
+            input_vector_length: length of input vector
         
         """
         return tf.data.Dataset.from_generator(
             generate_tf_dataset_from_files,
             args=[self.db_path+self.train_data_path],
             output_types=(tf.float32, tf.float32),
-            output_shapes=(tf.TensorShape((28,)), tf.TensorShape((1,))))
+            output_shapes=(tf.TensorShape((input_vector_length,)), tf.TensorShape((1,)))), \
+            tf.data.Dataset.from_generator(
+            generate_tf_dataset_from_files,
+            args=[self.db_path+self.val_data_path],
+            output_types=(tf.float32, tf.float32),
+            output_shapes=(tf.TensorShape((input_vector_length,)), tf.TensorShape((1,))))
 
-    def init_simple_model(self, model_structure=None):
+    def init_model(self, model_structure=None):
         """ Instantiates a simple keras sequential model.
 
         Args:
@@ -149,15 +159,22 @@ class SimpleMatchModel:
             loss=tf.keras.losses.SparseCategoricalCrossentropy(), 
             metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
     
-    def train_simple_model(self, epochs:int=5):
+    def train_model(self, input_vector_length:int=28, epochs:int=5, callbacks=None):
         """ Trains the model for epochs epochs.
 
         Args:
             epochs: number of epochs to train for.
+            input_vector_length: length of input vector
+            callbacks: a tf.keras callbacks list to pass to model.fit
 
         """
-        dataset = self.generate_tf_dataset().batch(32).shuffle(buffer_size=1000)
-        self.model.fit(dataset, epochs=5)
+        train_dataset, val_dataset = self.generate_tf_dataset(input_vector_length)
+        train_dataset = train_dataset.batch(32).shuffle(buffer_size=1000).repeat()
+        val_dataset = val_dataset.batch(32).shuffle(buffer_size=1000).repeat()
+        if callbacks is None:
+            self.model.fit(train_dataset, epochs=epochs, validation_data=val_dataset, steps_per_epoch=5000, validation_steps=1000)
+        else:
+            self.model.fit(train_dataset, epochs=epochs, validation_data=val_dataset, steps_per_epoch=5000, validation_steps=1000, callbacks=callbacks)
     
     def save_model_to_local(self, save_path:str, replace:bool=True) -> None:
         """ Saves a pre-trained model locally.

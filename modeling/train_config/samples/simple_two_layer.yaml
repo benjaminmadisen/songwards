@@ -1,0 +1,21 @@
+structure:
+  name: simple_two_layer_model
+  args:
+    input_size: 28
+    layer_size: 64
+
+model:
+  name: SimpleMatchModel
+  args:
+    db_path: ".local/"
+    data_path: "smp500k/"
+
+callbacks:
+  TensorBoard:
+    log_dir: ".local/tensorboard_logs/"
+  ModelCheckpoint:
+    filepath: ".local/best_model/"
+    save_best_only: True
+    monitor: "val_loss"
+
+epochs: 10

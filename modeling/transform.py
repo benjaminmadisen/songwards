@@ -257,7 +257,14 @@ class SpotifyInputFileGenerator:
                 for genre in row[1].split(" "):
                     cur_genres.append(genre)
 
-    def generate_match_prob_training_data(self, output_path:str, word_vector_model, genre_vector_model, features:dict, alts_per_record:int=1, replace:bool=True) -> None:
+    def generate_match_prob_training_data(self,
+                                          output_path:str,
+                                          word_vector_model,
+                                          genre_vector_model,
+                                          features:dict,
+                                          val_split:float=.3,
+                                          alts_per_record:int=1,
+                                          replace:bool=True) -> None:
         """ Generates a folder containing training data for the playlist matched probability dataset.
 
         Args:
@@ -280,6 +287,8 @@ class SpotifyInputFileGenerator:
             else:
                 raise FileExistsError()
         os.mkdir(self.db_path+output_path)
+        os.mkdir(self.db_path+output_path+"val/")
+        os.mkdir(self.db_path+output_path+"train/")
         word_freq = self.get_word_vector_freq(word_vector_model)
         numeric_features = [feature for feature in list(features.keys()) if features[feature][0] == "numeric"]
         genre_features = [feature for feature in list(features.keys()) if features[feature][0] == "genre"]
@@ -297,6 +306,10 @@ class SpotifyInputFileGenerator:
         con = sqlite3.connect(self.db_path+self.db_name)
         cur = con.cursor()
         rix = 0
+        tix = 0
+        cur.execute("SELECT COUNT(*) FROM temp_tracks_details")
+        
+        tix_cutoff = int(np.floor(((1.0-val_split)*cur.fetchone()[0])/5000.0))
         for row in cur.execute("SELECT playlist_name, %s FROM temp_tracks_details" % sel_string):
             rix += 1
             rowwords = simple_preprocess(row[0], deacc=True)
@@ -357,12 +370,17 @@ class SpotifyInputFileGenerator:
             targets = np.concatenate([targets, targs])
             
             if rix % 5000 == 0:
+                if tix >= tix_cutoff:
+                    temp_output_path = output_path+"val/"
+                else:
+                    temp_output_path = output_path+"train/"
+                tix += 1
                 print(rix)
                 targets = targets[1:]
                 trains = trains[1:,:]
-                with open(self.db_path+output_path+"bin_targets_%i.npy" % int(rix/5000), "wb") as f:
+                with open(self.db_path+temp_output_path+"bin_targets_%i.npy" % int(rix/5000), "wb") as f:
                     np.save(f, targets)
-                with open(self.db_path+output_path+"bin_trains_%i.npy" % int(rix/5000), "wb") as f:
+                with open(self.db_path+temp_output_path+"bin_trains_%i.npy" % int(rix/5000), "wb") as f:
                     np.save(f, trains)
                     
                 trains = np.zeros((1,len(word_vector_model[word_vector_model.index_to_key[0]])+len(genre_vector_model[genre_vector_model.index_to_key[0]])+len(numeric_features)+len(name_features)))
